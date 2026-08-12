@@ -1,9 +1,9 @@
 from http import HTTPStatus
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 
-from mynewapi.schemas import Message, HelloWorldHTML
+from mynewapi.schemas import Message, UserDB, UserList, UserPublic, UserSchema
 
 app = FastAPI()
 
@@ -13,8 +13,52 @@ def read_root():
     return {'message': 'Hello World'}
 
 
-@app.get('/htmlhello', status_code=HTTPStatus.OK,
-         response_class=HTMLResponse,
-         response_model= HelloWorldHTML)
+@app.get('/htmlhello', status_code=HTTPStatus.OK, response_class=HTMLResponse)
 def hello_world():
     return '<h1>Olá Mundo</h1>'
+
+
+database = []
+
+
+@app.post('/users/', status_code=HTTPStatus.CREATED, response_model=UserPublic)
+def create_user(user: UserSchema):
+    user_with_id = UserDB(**user.model_dump(), id=len(database) + 1)
+    database.append(user_with_id)
+    return user_with_id
+
+
+@app.get('/users/', status_code=HTTPStatus.OK, response_model=UserList)
+def read_users():
+    return {'users': database}
+
+
+@app.get(
+    '/users/{user_id}', status_code=HTTPStatus.OK, response_model=UserPublic
+)
+def read_user(user_id: int):
+    if user_id > len(database):
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail='Id not found'
+        )
+    return database[user_id - 1]
+
+
+@app.put(
+    '/users/{user_id}', status_code=HTTPStatus.OK, response_model=UserPublic
+)
+def update_user(user_id: int, user: UserSchema):
+    if user_id > len(database) or user_id < 1:
+        raise HTTPException(status_code=404, detail='Id not found')
+    user_with_id = UserDB(**user.model_dump(), id=user_id)
+    database[user_id - 1] = user_with_id
+    return user_with_id
+
+
+@app.delete(
+    '/users/{user_id}', status_code=HTTPStatus.OK, response_model=UserPublic
+)
+def delete_user(user_id: int):
+    if user_id > len(database) or user_id < 1:
+        raise HTTPException(status_code=404, detail='Id not found')
+    return database.pop(user_id - 1)
