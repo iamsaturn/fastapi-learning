@@ -1,5 +1,7 @@
 from http import HTTPStatus
 
+from mynewapi.schemas import UserPublic
+
 
 def test_root_should_return_hello_world(client):
     response = client.get('/')
@@ -32,19 +34,20 @@ def test_create_user(client):
 
 def test_read_users(client):
     response = client.get('/users/')
+
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {
-        'users': [
-            {
-                'username': 'alice',
-                'email': 'alice@iamalice.com',
-                'id': 1,
-            }
-        ]
-    }
+    assert response.json() == {'users': []}
 
 
-def test_update_user(client):
+def test_read_users_with_users(client, user):
+
+    user_schema = UserPublic.model_validate(user)
+    response = client.get('/users/')
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == {'users': [user_schema.model_dump()]}
+
+
+def test_update_user(client, user):
     response = client.put(
         '/users/1',
         json={
@@ -63,7 +66,7 @@ def test_update_user(client):
 
 def test_update_user_error(client):
     response = client.put(
-        'users/666',
+        '/users/666',
         json={
             'username': 'bunny',
             'email': 'bunny@iambunny.com',
@@ -71,20 +74,20 @@ def test_update_user_error(client):
         },
     )
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {'detail': 'Id not found'}
+    assert response.json() == {'detail': 'User not found'}
 
 
-def test_delete_user(client):
-    response = client.delete('users/666')
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {'detail': 'Id not found'}
+def test_delete_user_should_return_ok(client, user):
+    response = client.delete('/users/1')
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == {'message': 'User deleted'}
 
 
 def test_delete_user_should_return_not_found__exercicio(client):
     response = client.delete('/users/666')
 
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert response.json() == {'detail': 'Id not found'}
+    assert response.json() == {'detail': 'User not found'}
 
 
 def test_get_user_should_return_not_found(client):
@@ -94,12 +97,9 @@ def test_get_user_should_return_not_found(client):
     assert response.json() == {'detail': 'Id not found'}
 
 
-def test_get_user(client):
+def test_get_user(client, user):
     response = client.get('/users/1')
+    user_schema = UserPublic.model_validate(user)
 
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {
-        'username': 'bunny',
-        'email': 'bunny@iambunny.com',
-        'id': 1,
-    }
+    assert response.json() == user_schema.model_dump()
