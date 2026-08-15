@@ -103,3 +103,28 @@ def test_get_user(client, user):
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == user_schema.model_dump()
+
+
+def test_update_integrity_error(client, user):
+    client.post(
+        '/users/',
+        json={
+            'username': 'lua',
+            'email': 'lua@gmail.com',
+            'password': 'secret',
+        },
+    )
+
+    response_update = client.put(
+        '/users/1',
+        json={
+            'username': 'lua',
+            'email': 'lua@outlook.com',
+            'password': 'secretnew',
+        },
+    )
+
+    assert response_update.status_code == HTTPStatus.CONFLICT
+    assert response_update.json() == {
+        'detail': 'Username or Email already exists'
+    }
