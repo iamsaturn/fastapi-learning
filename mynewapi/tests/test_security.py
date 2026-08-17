@@ -3,12 +3,10 @@ from http import HTTPStatus
 from jwt import decode
 
 from mynewapi.security import create_access_token
-from mynewapi.settings import Settings
-
-settings = Settings()
 
 
-def test_jwt():
+
+def test_jwt(settings):
     data = {'test': 'test'}
     token = create_access_token(data)
     decoded = decode(token, settings.SECRET_KEY, settings.ALGORITHM)
