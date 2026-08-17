@@ -11,12 +11,9 @@ from sqlalchemy.orm import Session
 
 from mynewapi.database import get_session
 from mynewapi.models import User
+from mynewapi.settings import Settings
 
-SECRET_KEY = 'mykey'
-ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRES = 30
-
-
+settings = Settings()
 oauth2_schema = OAuth2PasswordBearer(tokenUrl='token')
 pwd_context = PasswordHash.recommended()
 
@@ -32,10 +29,10 @@ def verify_password(plain_password: str, hashed_password: str):
 def create_access_token(data: dict):
     to_encode = data.copy()
     expiration = datetime.now(tz=ZoneInfo('UTC')) + timedelta(
-        minutes=ACCESS_TOKEN_EXPIRES
+        minutes=settings.ACCESS_TOKEN_EXPIRES
     )
     to_encode.update({'exp': expiration})
-    return encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
 def get_current_user(
@@ -48,7 +45,7 @@ def get_current_user(
         headers={'WWW-Authenticate': 'Bearer'},
     )
     try:
-        payload = decode(token, SECRET_KEY, ALGORITHM)
+        payload = decode(token, settings.SECRET_KEY, settings.ALGORITHM)
         subject_email = payload.get('sub')
         if not subject_email:
             raise credentials_exception
