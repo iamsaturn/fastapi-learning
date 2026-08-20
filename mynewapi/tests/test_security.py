@@ -5,7 +5,6 @@ from jwt import decode
 from mynewapi.security import create_access_token
 
 
-
 def test_jwt(settings):
     data = {'test': 'test'}
     token = create_access_token(data)
