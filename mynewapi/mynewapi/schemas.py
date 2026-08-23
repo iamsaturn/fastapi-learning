@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from mynewapi.models import ToDoState
+
 
 class Message(BaseModel):
     message: str
@@ -30,3 +32,23 @@ class Token(BaseModel):
 class FilterPage(BaseModel):
     offset: int = Field(ge=0, default=0)
     limit: int = Field(ge=0, default=10)
+
+
+class FilterTodo(FilterPage):
+    title: str | None = Field(default=None, min_length=3, max_length=20)
+    description: str | None = None
+    state: ToDoState | None = None
+
+
+class ToDoSchema(BaseModel):
+    title: str
+    description: str
+    state: ToDoState = Field(default=ToDoState.todo)
+
+
+class ToDoPublic(ToDoSchema):
+    id: int
+
+
+class ToDoList(BaseModel):
+    todos: list[ToDoPublic]

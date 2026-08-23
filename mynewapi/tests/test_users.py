@@ -130,23 +130,15 @@ def test_get_user(client, user, token):
     assert response.json() == user_schema.model_dump()
 
 
-def test_update_integrity_error(client, user, token):
-    client.post(
-        '/users/',
-        json={
-            'username': 'lua',
-            'email': 'lua@gmail.com',
-            'password': 'secret',
-        },
-    )
+def test_update_integrity_error(client, user, token, other_user):
 
     response_update = client.put(
         '/users/1',
         headers={'Authorization': f'Bearer {token}'},
         json={
-            'username': 'lua',
-            'email': 'lua@outlook.com',
-            'password': 'secretnew',
+            'username': other_user.username,
+            'email': other_user.email,
+            'password': 'secretsecret',
         },
     )
 

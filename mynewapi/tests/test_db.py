@@ -28,4 +28,5 @@ async def test_create_user(session: AsyncSession, mock_db_time):
         'password': 'secret',
         'created_at': fake_time,
         'updated_at': fake_time,
+        'todos': [],
     }
