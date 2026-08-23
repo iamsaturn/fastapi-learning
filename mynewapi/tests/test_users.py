@@ -163,3 +163,26 @@ def test_delete_user_different_than_logged_in(client, token, user):
     )
     assert response.status_code == HTTPStatus.FORBIDDEN
     assert response.json() == {'detail': 'Not enough permissions'}
+
+
+def test_update_user_with_false_user(client, other_user, token):
+    resp = client.put(
+        f'/users/{other_user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+        json={
+            'username': 'luana',
+            'email': 'itsluana@test.com',
+            'password': 'luana123',
+        },
+    )
+    assert resp.status_code == HTTPStatus.FORBIDDEN
+    assert resp.json() == {'detail': 'Not enough permissions'}
+
+
+def test_delete_wrong_user(token, other_user, client):
+    response = client.delete(
+        f'/users/{other_user.id}',
+        headers={'Authorization': f'Bearer {token}'},
+    )
+    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.json() == {'detail': 'Not enough permissions'}
