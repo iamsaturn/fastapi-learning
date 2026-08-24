@@ -3,8 +3,9 @@ from http import HTTPStatus
 import factory
 import factory.fuzzy
 import pytest
+from sqlalchemy.exc import DataError
 
-from mynewapi.models import Todo, ToDoState
+from mynewapi.models import Todo, ToDoState, User
 
 
 class TodoFactory(factory.Factory):
@@ -101,24 +102,6 @@ async def test_list_todos_filter_title_should_return_5_todos(
     assert len(response.json()['todos']) == expected_todos
 
 
-def test_create_todo(client, token):
-    response = client.post(
-        '/todos/',
-        headers={'Authorization': f'Bearer {token}'},
-        json={
-            'title': 'Test to-do',
-            'description': 'This is a test',
-            'state': 'draft',
-        },
-    )
-    assert response.json() == {
-        'id': 1,
-        'title': 'Test to-do',
-        'description': 'This is a test',
-        'state': 'draft',
-    }
-
-
 @pytest.mark.asyncio
 async def test_delete_todo(session, client, user, token):
     todo = TodoFactory(user_id=user.id)
@@ -130,9 +113,7 @@ async def test_delete_todo(session, client, user, token):
     )
 
     assert response.status_code == HTTPStatus.OK
-    assert response.json() == {
-        'message': 'Task has been deleted'
-    }
+    assert response.json() == {'message': 'Task has been deleted'}
 
 
 @pytest.mark.asyncio
@@ -143,3 +124,65 @@ async def test_delete_todo_error(client, token):
 
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert response.json() == {'detail': 'Task not found'}
+
+
+def test_create_todo(client, token, mock_db_time):
+    with mock_db_time(model=Todo) as time:
+        response = client.post(
+            '/todos/',
+            headers={'Authorization': f'Bearer {token}'},
+            json={
+                'title': 'Test todo',
+                'description': 'Test todo description',
+                'state': 'draft',
+            },
+        )
+
+    assert response.json() == {
+        'id': 1,
+        'title': 'Test todo',
+        'description': 'Test todo description',
+        'state': 'draft',
+        'created_at': time.isoformat(),
+        'updated_at': time.isoformat(),
+    }
+
+
+@pytest.mark.asyncio
+async def test_todo_should_return_all_fields(
+    client, session, token, mock_db_time, user
+):
+    with mock_db_time(model=Todo) as time:
+        todo = TodoFactory.create(user_id=user.id)
+        session.add(todo)
+        await session.commit()
+    await session.refresh(todo)
+    response = client.get(
+        'todos/', headers={'Authorization': f'Bearer {token}'}
+    )
+
+    assert response.json()['todos'] == [
+        {
+            'created_at': time.isoformat(),
+            'updated_at': time.isoformat(),
+            'description': todo.description,
+            'id': todo.id,
+            'state': todo.state,
+            'title': todo.title,
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_create_todo_error(session, user: User):
+    todo = Todo(
+        title='Test Todo',
+        description='Test Desc',
+        state='test',
+        user_id=user.id,
+    )
+
+    session.add(todo)
+    with pytest.raises(DataError):
+        await session.commit()
+    await session.rollback()

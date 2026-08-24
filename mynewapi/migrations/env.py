@@ -5,6 +5,7 @@ from sqlalchemy import pool
 from mynewapi.settings import Settings
 from mynewapi.models import table_registry
 import asyncio
+import sys
 
 from alembic import context
 
@@ -73,7 +74,13 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
+    if sys.platform == 'win32':
+        asyncio.run(
+        run_async_migrations(),
+        loop_factory=asyncio.SelectorEventLoop,
+        )
+    else:
+        asyncio.run(run_async_migrations())
     
 
 if context.is_offline_mode():

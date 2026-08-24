@@ -72,6 +72,6 @@ async def delete_todo(session: Session, user: CurrentUser, todo_id: int):
             status_code=HTTPStatus.NOT_FOUND, detail='Task not found'
         )
 
-    session.delete(todo)
+    await session.delete(todo)
     await session.commit()
     return {'message': 'Task has been deleted'}
