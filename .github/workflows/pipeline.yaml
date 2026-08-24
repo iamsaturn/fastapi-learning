@@ -3,6 +3,7 @@ on: [push, pull_request]
 
 jobs:
   push:
+    working-directory: mynewapi
     runs-on: ubuntu-latest
 
     steps:
